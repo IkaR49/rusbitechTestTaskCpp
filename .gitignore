@@ -1,0 +1,12 @@
+.hg*
+*~
+*.un~
+*.swp
+
+bin/
+obj/
+
+*.aux
+*.log
+*.dvi
+*.ps
