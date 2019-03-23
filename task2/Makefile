@@ -13,7 +13,11 @@ endif
 all : pro mk compile
 
 pro : $(tmpdir)
+ifeq ($(OS),Windows_NT)
+	cd src && qmake -project -o ../$(tmpdir)/task2.pro
+else
 	qmake -project -o $(tmpdir)/task2.pro
+endif
 mk : pro
 	qmake -makefile -o $(tmpdir)/Makefile-qt $(tmpdir)/task2.pro
 compile : mk
