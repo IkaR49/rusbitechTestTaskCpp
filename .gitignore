@@ -1,12 +1,16 @@
 .hg*
 *~
-*.un~
 *.swp
 
 bin/
 obj/
+dep/
+
+tmp/
+task2.exe
 
 *.aux
 *.log
 *.dvi
 *.ps
+

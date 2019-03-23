@@ -1,41 +1,53 @@
-CC = g++
-CFLAGS = -c -Wall
-LDFLAGS =
+ifeq ($(OS),Windows_NT)
+	exec := bin/animarket.exe
+	MAKE ?= mingw32-make.exe
+else
+	exec := bin/animarket
+	MAKE ?= make
+endif
 
-obj/Animal.o: src/Animal.cpp src/Animal.hpp obj
-	$(CC) $(CFLAGS) -o obj/Animal.o src/Animal.cpp src/Animal.hpp
+compiler = g++ -c -Wall -std=c++14
+linker = g++ -std=c++14
+depmaker = g++ -MM
 
-obj/Amphibia.o: src/.cpp src/.hpp src/Animal.hpp obj
-	$(CC) $(CFLAGS) -o obj/Animal.o src/Animal.cpp src/Animal.hpp
+nothing =
+sources = $(sort $(wildcard src/*.cpp))
+objects = $(patsubst src/%.cpp, obj/%.o, $(sources))
+depends = $(patsubst src/%.cpp, dep/%.d, $(sources))
 
-obj/Bird.o: src/.cpp src/.hpp src/Animal.hpp obj
-	$(CC) $(CFLAGS) -o obj/Animal.o src/Animal.cpp src/Animal.hpp
+subdirs = dep obj bin
 
-obj/Fish.o: src/.cpp src/.hpp src/Animal.hpp obj
-	$(CC) $(CFLAGS) -o obj/Animal.o src/Animal.cpp src/Animal.hpp
+.PHONY : all clean depend
 
-obj/Insect.o: src/.cpp src/.hpp src/Animal.hpp obj
-	$(CC) $(CFLAGS) -o obj/Animal.o src/Animal.cpp src/Animal.hpp
+# Если для какого-то файла *.cpp нет соответствующего *.d
+ifeq ($(findstring $(strip $(depends)), $(sort $(wildcard dep/*.d))), $(nothing))
 
-obj/Mammal.o: src/.cpp src/.hpp src/Animal.hpp obj
-	$(CC) $(CFLAGS) -o obj/Animal.o src/Animal.cpp src/Animal.hpp
+# Сначала строим все зависимости, создаём каталоги и снова запускаем этот Makefile
+all : $(subdirs) depend
+	@$(MAKE)
 
-obj/Reptile.o: src/.cpp src/.hpp src/Animal.hpp obj
-	$(CC) $(CFLAGS) -o obj/Animal.o src/Animal.cpp src/Animal.hpp
+else
 
-obj/Market.o: src/.cpp src/.hpp src/Animal.hpp obj
-	$(CC) $(CFLAGS) -o obj/Animal.o src/Animal.cpp src/Animal.hpp
+# Приступаем к компиляции
+all : $(exec) ;
+# Подключаем все построенные зависимости
+include $(wildcard dep/*.d)
 
-obj/main.o: src/.cpp src/.hpp src/Animal.hpp obj
-	$(CC) $(CFLAGS) -o obj/Animal.o src/Animal.cpp src/Animal.hpp
-
-bin/animarket: bin obj/main.o obj/Market.o obj/Animal.o obj/Amphibia.o obj/Bird.o obj/Fish.o obj/Insect.o obj/Mammal.o obj/Reptile.o
-	$(CC) $(CFLAGS) -o bin/animarket obj/main.o obj/Animal.o obj/Amphibia.o obj/Bird.o obj/Fish.o obj/Insect.o obj/Mammal.o obj/Reptile.o
-obj:
-	mkdir obj
-bin:
-	mkdir bin
+endif
 
 clean:
-	rm -rf bin
-	rm -rf obj
+	rm -rf $(subdirs)
+depend : $(depends) ;
+$(subdirs) :
+	mkdir $@
+
+# Создание списка зависимостей каждого файла с исходным кодом средствами компилятора
+dep/%.d : src/%.cpp
+	$(depmaker) $< | sed '1s|^|$@ obj/|' > $@
+
+obj/%.o : dep/%.d
+	$(compiler) $(filter %.cpp, $^) -o $@
+
+$(exec) : $(objects)
+	$(linker) $^ -o $@
+
